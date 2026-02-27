@@ -1,0 +1,5 @@
+# ❌ SEM CACHE: baixa tudo toda vez
+steps:
+  - uses: actions/checkout@v4
+  - run: npm install  # ~4 minutos toda vez
+  - run: npm test

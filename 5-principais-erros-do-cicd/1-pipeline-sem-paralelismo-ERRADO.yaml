@@ -1,0 +1,11 @@
+# ❌ ERRO: tudo em sequência, um job só
+jobs:
+  pipeline:
+    runs-on: ubuntu-latest
+    steps:
+      - run: npm install
+      - run: npm run lint
+      - run: npm test
+      - run: npm run test:integration
+      - run: npm run build
+      - run: ./deploy.sh

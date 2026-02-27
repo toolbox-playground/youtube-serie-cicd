@@ -1,0 +1,17 @@
+# Consumer define o contrato esperado
+const { PactV3 } = require('@pact-foundation/pact');
+
+const provider = new PactV3({
+  consumer: 'frontend-app',
+  provider: 'user-api',
+});
+
+it('retorna usuário por ID', async () => {
+  await provider
+    .given('usuário 123 existe')
+    .uponReceiving('GET /users/123')
+    .willRespondWith({
+      status: 200,
+      body: { id: 123, name: 'João' }
+    });
+});

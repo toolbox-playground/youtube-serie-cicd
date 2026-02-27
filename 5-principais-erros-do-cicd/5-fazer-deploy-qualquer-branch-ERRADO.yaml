@@ -1,0 +1,8 @@
+# ❌ PROBLEMA: roda em qualquer push, inclusive branches de teste
+on: push
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - run: ./deploy.sh  # vai pra produção em qualquer push!

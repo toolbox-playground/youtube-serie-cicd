@@ -1,0 +1,24 @@
+# ✅ CERTO: CI roda em tudo, deploy só na branch certa
+on:
+  push:
+    branches: ['**']   # CI em todas as branches
+  workflow_dispatch:   # deploy manual quando precisar
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - run: npm test   # sempre
+
+  deploy-staging:
+    needs: test
+    if: github.ref == 'refs/heads/develop'
+    steps:
+      - run: ./deploy.sh staging
+
+  deploy-prod:
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    environment: production   # requer aprovação manual
+    steps:
+      - run: ./deploy.sh production

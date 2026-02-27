@@ -1,0 +1,23 @@
+# ✅ CERTO: jobs paralelos com dependências
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - run: npm run lint
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - run: npm test
+
+  build:
+    needs: [lint, test]   # só roda se os dois passarem
+    runs-on: ubuntu-latest
+    steps:
+      - run: npm run build
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - run: ./deploy.sh
