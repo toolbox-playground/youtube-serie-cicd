@@ -14,6 +14,7 @@ Cada vídeo tem uma pasta com o mesmo nome, contendo os arquivos exibidos (exemp
 | 2 | **Pipeline não é YAML: e se você acha que é, esse vídeo é pra você!** | [assistir](https://www.youtube.com/watch?v=LNVnI10DCWY) | — | O que é pipeline de verdade |
 | 3 | **CI/CD com GitHub Actions: pipeline completa em 30 minutos** | [assistir](https://www.youtube.com/watch?v=vh4XtEmOp8k) | [`github-actions-pipeline-completa/`](./github-actions-pipeline-completa/) | App Node.js + workflow completo (build, test, deploy no GitHub Pages) |
 | 4 | **GitHub Actions: Os 5 Erros Mais Comuns em Pipelines de CI/CD** | [assistir](https://www.youtube.com/watch?v=3bFGpe0ljIQ) | [`5-principais-erros-do-cicd/`](./5-principais-erros-do-cicd/) | Exemplos ERRADO vs CERTO: paralelismo, secrets, cache, testes de integração e proteção de ambientes |
+| 5 | **GitHub Actions Secrets: como proteger suas credenciais do jeito certo** | [assistir](#) | [`github-actions-secrets-azure/`](./github-actions-secrets-azure/) | 4 níveis de proteção de credenciais: Repository Secrets, Environment Secrets, Organization Secrets e OIDC |
 
 ---
 
@@ -33,29 +34,37 @@ youtube-serie-cicd/
 │   ├── test/
 │   │   └── build.test.js
 │   └── dist/                        # gerado pelo build (publicado no Pages)
-└── 5-principais-erros-do-cicd/      # Episódio 4: 5 erros comuns em CI/CD
-    ├── 1-pipeline-sem-paralelismo-ERRADO.yaml
-    ├── 1-pipeline-sem-paralelismo-CERTO.yaml
-    ├── 2-secret-direto-no-yaml-ERRADO.yaml
-    ├── 2-secret-direto-no-yaml-CERTO.yaml
-    ├── 3-nao-usar-cache-ERRADO.yaml
-    ├── 3-nao-usar-cache-CERTO.yaml
-    ├── 4-nao-testar-integracao-ERRADO.yaml
-    ├── 4-nao-testar-integracao-CERTO.yaml
-    ├── 5-fazer-deploy-qualquer-branch-ERRADO.yaml
-    └── 5-fazer-deploy-qualquer-branch-CERTO.yaml
+├── 5-principais-erros-do-cicd/      # Episódio 4: 5 erros comuns em CI/CD
+│   ├── 1-pipeline-sem-paralelismo-ERRADO.yaml
+│   ├── 1-pipeline-sem-paralelismo-CERTO.yaml
+│   ├── 2-secret-direto-no-yaml-ERRADO.yaml
+│   ├── 2-secret-direto-no-yaml-CERTO.yaml
+│   ├── 3-nao-usar-cache-ERRADO.yaml
+│   ├── 3-nao-usar-cache-CERTO.yaml
+│   ├── 4-nao-testar-integracao-ERRADO.yaml
+│   ├── 4-nao-testar-integracao-CERTO.yaml
+│   ├── 5-fazer-deploy-qualquer-branch-ERRADO.yaml
+│   └── 5-fazer-deploy-qualquer-branch-CERTO.yaml
+└── github-actions-secrets-azure/    # Episódio 5: protegendo credenciais
+    ├── README.md                    # Guia completo dos 4 níveis de segurança
+    ├── checklist-aula.md           # Checklist prático para apresentação
+    ├── setup-oidc-azure.md         # Tutorial passo-a-passo OIDC com Azure
+    ├── nivel1-repository-secrets.yml
+    ├── nivel2-environment-secrets.yml
+    ├── nivel3-organization-secrets.yml
+    └── nivel4-oidc-azure.yml
 ```
 
-- **Uma pasta por vídeo** (quando há código) — nome da pasta = tema do episódio.
-- **Episódios 1 e 2** — só conceito; sem pasta de código.
-- **Episódio 3** — app completa + workflow em `.github/workflows/deploy.yml` (roda na pasta `github-actions-pipeline-completa/`).
-- **Episódio 4** — trechos YAML “errado” vs “certo”; para usar em projeto real, adapte (ex.: adicionar `name:` e `on:` no workflow).
-
+- **Uma pasta por vídeo** (quando há código) — nome da pasta = tema do episódio
+- **Episódios 1 e 2** — só conceito; sem pasta de código
+- **Episódio 3** — app completa + workflow em `.github/workflows/deploy.yml` (roda na pasta `github-actions-pipeline-completa/`)
+- **Episódio 4** — trechos YAML “errado” vs “certo”; para usar em projeto real, adapte (ex.: adicionar `name:` e `on:` no workflow)
+- **Episódio 5** — guia completo de segurança + workflows práticos para cada nível de proteção de secrets; inclui tutorial completo de OIDC com Azure
 ---
 
 ## 🛠 Como usar
 
-1. **Assistir o vídeo** — a ordem recomendada é seguir a série (conceitos → GitHub Actions → pipelines → erros comuns).
+1. **Assistir o vídeo** — a ordem recomendada é seguir a série (conceitos → GitHub Actions → pipelines → erros comuns → proteção de credenciais).
 2. **Abrir a pasta do episódio** — todos os arquivos mostrados na tela estão aqui.
 3. **Copiar e adaptar** — use os exemplos “CERTO” como base e ajuste ao seu projeto (repositório, branch, ambiente, etc.).
 
