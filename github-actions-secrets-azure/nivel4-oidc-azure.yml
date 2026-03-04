@@ -1,0 +1,74 @@
+name: Nível 4 - OIDC com Azure (Estado da Arte)
+
+on:
+  workflow_dispatch:  # Execução manual para demo
+  push:
+    branches: [main]
+
+# OIDC elimina a necessidade de Client Secrets de longa duração
+# O Azure emite tokens temporários baseados na identidade do GitHub
+
+jobs:
+  deploy-with-oidc:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write    # OBRIGATÓRIO para OIDC
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Autenticar no Azure via OIDC
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}        # App Registration ID
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}        # Directory ID
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          # ✨ Nenhum client secret necessário! O OIDC cuida de tudo.
+
+      - name: Deploy para Azure App Service
+        run: |
+          echo "🚀 Fazendo deploy usando OIDC - sem credenciais de longa duração!"
+          
+          # Exemplo: Deploy de Web App
+          az webapp deploy \
+            --resource-group meu-rg \
+            --name meu-app \
+            --src-path ./dist
+
+      - name: Limpar Cache do CDN
+        run: |
+          # Exemplo: Purge do Azure CDN
+          az cdn endpoint purge \
+            --resource-group meu-rg \
+            --profile-name meu-cdn \
+            --name meu-endpoint \
+            --content-paths '/*'
+            
+      - name: Verificar deployment
+        run: |
+          echo "✅ Deploy concluído!"
+          echo "🔐 Token temporário já expirou automaticamente"
+          echo "🛡️  Nenhuma credencial de longa duração foi armazenada"
+
+  # Exemplo de job que falha se não for do repositório/branch corretos
+  security-demo:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Demonstrar restrições de segurança
+        run: |
+          echo "🔒 Este job só funciona se:"
+          echo "   - For executado no repositório configurado no Federated Credential"
+          echo "   - For da branch main (ou branch configurada)"
+          echo "   - O token OIDC for válido e não expirado"
+          echo "   - A trust policy no Azure permitir o acesso"
+          
+      - name: Tentar autenticar (vai funcionar apenas se condições forem atendidas)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
