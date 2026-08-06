@@ -1,4 +1,4 @@
-name: Deploy GitHub Pages
+name: Validate and Deploy GitHub Pages
 
 on:
   push:
@@ -8,6 +8,12 @@ on:
       - "site/**"
       - ".github/workflows/deploy-pages.yml"
 
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "site/**"
+
   workflow_dispatch:
 
 permissions:
@@ -16,13 +22,53 @@ permissions:
   id-token: write
 
 concurrency:
-  group: github-pages
+  group: github-pages-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  validate:
+    name: Validate HTML
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Check site directory
+        shell: bash
+        run: |
+          if [ ! -d "./site" ]; then
+            echo "::error::The directory ./site does not exist."
+            exit 1
+          fi
+
+      - name: Check index.html
+        shell: bash
+        run: |
+          if [ ! -f "./site/index.html" ]; then
+            echo "::error::The file ./site/index.html does not exist."
+            exit 1
+          fi
+
+      - name: Validate HTML files
+        run: |
+          npx --yes html-validate@11.5.6 "site/**/*.html"
+
   deploy:
     name: Publish GitHub Pages
     runs-on: ubuntu-latest
+    needs:
+      - validate
+
+    # Pull Requests executam somente a validação.
+    # O deploy ocorre apenas em push na branch main
+    # ou quando executado manualmente.
+    if: github.event_name != 'pull_request'
 
     environment:
       name: github-pages
