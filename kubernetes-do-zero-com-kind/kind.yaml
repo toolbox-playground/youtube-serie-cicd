@@ -1,0 +1,22 @@
+# Cluster do laboratório — "Kubernetes do zero em 2026" (TBX Tech)
+# Sobe: 1 control-plane + 2 workers.
+#
+# Uso:
+#   kind create cluster --config kind.yaml
+#   kubectl cluster-info
+#
+# Sobre a imagem do nó (linha "image:", comentada abaixo):
+# cada versão do kind suporta um conjunto específico de imagens kindest/node.
+# Confira a tag correta nas release notes da SUA versão do kind (kind version)
+# e descomente. Em ambiente sério, use também o digest: kindest/node:vX.Y.Z@sha256:...
+# Em ago/2026 as versões do Kubernetes com suporte são 1.34, 1.35 e 1.36 (política N-2).
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: tbx
+nodes:
+  - role: control-plane
+    # image: kindest/node:v1.36.0
+  - role: worker
+    # image: kindest/node:v1.36.0
+  - role: worker
+    # image: kindest/node:v1.36.0

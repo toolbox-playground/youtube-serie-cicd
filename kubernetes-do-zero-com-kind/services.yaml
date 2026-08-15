@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: tbx-web
+  labels:
+    app: tbx-web
+spec:
+  type: ClusterIP
+  selector:
+    app: tbx-web     # o Service roteia para os pods PRONTOS com esta label
+  ports:
+    - name: http
+      port: 80         # porta do Service
+      targetPort: http # porta do container (8080)

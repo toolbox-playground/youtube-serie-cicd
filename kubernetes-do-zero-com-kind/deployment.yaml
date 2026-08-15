@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tbx-web
+  labels:
+    app: tbx-web
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: tbx-web          # precisa casar com as labels do template abaixo
+  template:
+    metadata:
+      labels:
+        app: tbx-web
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 101       # usuário nginx da imagem unprivileged
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: web
+          # tag fixa, nunca :latest. Em produção, prefira o digest (@sha256:...)
+          # imagem unprivileged: escuta em 8080 e não precisa de root
+          image: nginxinc/nginx-unprivileged:stable-alpine
+          ports:
+            - name: http
+              containerPort: 8080
+          resources:
+            requests:        # o scheduler usa isto para decidir onde o pod cabe
+              cpu: 50m
+              memory: 64Mi
+            limits:          # aqui o container apanha
+              cpu: 200m
+              memory: 128Mi
+          readinessProbe:    # "pode mandar tráfego pra mim?"
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          livenessProbe:     # "preciso ser morto e recriado?"
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            # readOnlyRootFilesystem exigiria montar emptyDir em /tmp e
+            # /var/cache/nginx — fica para o vídeo de produção.
+            readOnlyRootFilesystem: false
