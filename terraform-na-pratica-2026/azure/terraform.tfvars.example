@@ -1,0 +1,6 @@
+# Copie para terraform.tfvars e preencha. terraform.tfvars NAO vai para o git.
+subscription_id = "00000000-0000-0000-0000-000000000000"
+location        = "brazilsouth"
+prefixo         = "tbx"
+# Descubra seu IP: curl -s ifconfig.me
+meu_ip_cidr     = "0.0.0.0/0"

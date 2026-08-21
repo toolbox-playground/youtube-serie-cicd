@@ -1,0 +1,21 @@
+#cloud-config
+package_update: true
+packages:
+  - nginx
+write_files:
+  - path: /var/www/html/index.html
+    permissions: "0644"
+    content: |
+      <!doctype html>
+      <html lang="pt-BR">
+        <head><meta charset="utf-8"><title>TBX Tech</title></head>
+        <body style="font-family:Arial,sans-serif;background:#012949;color:#fff;
+                     display:flex;align-items:center;justify-content:center;height:100vh;margin:0">
+          <div style="text-align:center">
+            <h1 style="font-size:42px;margin:0">Provisionado com Terraform</h1>
+            <p style="color:#FFD60A;font-size:20px">TBX Tech &middot; nenhum clique no portal</p>
+          </div>
+        </body>
+      </html>
+runcmd:
+  - systemctl enable --now nginx
