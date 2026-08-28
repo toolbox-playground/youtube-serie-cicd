@@ -12,3 +12,11 @@ crash.log
 
 # O lock file VAI para o git — ele trava a versao exata do provider
 !.terraform.lock.hcl
+
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.env
+pipeline_key*

@@ -1,0 +1,13 @@
+# Tudo que NÃO precisa entrar no contexto de build.
+# Menos contexto = build mais rápido, imagem menor e nenhum segredo vazando por acidente.
+.git
+.github
+.venv
+venv
+__pycache__
+*.pyc
+.pytest_cache
+tests
+deploy
+.env
+*.md

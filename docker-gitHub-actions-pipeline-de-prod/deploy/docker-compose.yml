@@ -1,0 +1,14 @@
+# Vive no servidor em /opt/tbx-api/docker-compose.yml
+# A pipeline só troca o IMAGE_TAG no .env ao lado e roda `docker compose up -d`.
+services:
+  api:
+    image: ghcr.io/toolbox-playground/youtube-serie-cicd:${IMAGE_TAG:?defina IMAGE_TAG no .env}
+    restart: unless-stopped
+    ports:
+      - "80:8000"
+    # O HEALTHCHECK vem da própria imagem: `docker ps` mostra (healthy)/(unhealthy).
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
