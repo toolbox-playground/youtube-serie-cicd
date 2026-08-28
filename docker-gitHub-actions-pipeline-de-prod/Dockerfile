@@ -24,6 +24,12 @@ ENV APP_VERSION=${APP_VERSION} \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
+# Patches de segurança do SO: a base slim atrasa atrás do Debian.
+# Aplica os fixes disponíveis (ex: openssl) para o scan do Trivy passar limpo.
+RUN apt-get update \
+    && apt-get upgrade -y \
+    && rm -rf /var/lib/apt/lists/*
+
 # Usuário sem privilégio. Container rodando como root é a falha nº 1 que a gente vê em auditoria.
 RUN useradd --system --uid 10001 --create-home app
 
