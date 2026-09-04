@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: tbx-api
+  namespace: tbx
+spec:
+  # NodePort só porque é kind (mapeado para localhost:8080 no kind-config).
+  # Em cloud: ClusterIP + Ingress/Gateway. O resto do vídeo não muda.
+  type: NodePort
+  selector:
+    app: tbx-api
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+      nodePort: 30080

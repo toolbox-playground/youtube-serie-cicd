@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: tbx
+  labels:
+    # Pod Security Admission: nada de root, nada de privilégio — coerente
+    # com o Dockerfile de sexta passada (USER app, uid 10001).
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest

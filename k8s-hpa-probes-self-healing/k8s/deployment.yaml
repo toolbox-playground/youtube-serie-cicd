@@ -1,0 +1,97 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tbx-api
+  namespace: tbx
+  labels:
+    app: tbx-api
+spec:
+  # DECISÃO 1 — replicas é o MÍNIMO desejado, não "quantos eu tenho".
+  # O HPA vai assumir esse número; ele só existe aqui para o primeiro apply.
+  replicas: 2
+  revisionHistoryLimit: 5
+  selector:
+    matchLabels:
+      app: tbx-api
+
+  # DECISÃO 2 — rollout sem indisponibilidade: sobe 1 novo, espera ficar
+  # Ready (readiness probe!), só então derruba 1 velho. Zero pod a menos.
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: tbx-api
+    spec:
+      # Tempo que o kubelet dá para o app fechar conexões após o SIGTERM
+      # (uvicorn em exec form recebe o sinal — lembra do CMD em lista?).
+      terminationGracePeriodSeconds: 20
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+
+      # DECISÃO 3 — espalha as réplicas entre nós. Sem isso, 2 réplicas no
+      # mesmo nó = 1 nó cai, 0 réplicas. "Alta disponibilidade" de mentira.
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app: tbx-api
+      containers:
+        - name: api
+          # A MESMA imagem que a pipeline de sexta passada publicou no GHCR.
+          image: ghcr.io/toolbox-playground/youtube-serie-cicd:sha-9a28acb
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8000
+
+          # DECISÃO 4 — requests é a base de TUDO: do scheduler (onde cabe)
+          # e do HPA (50% de 100m = 50m). Sem cpu request, HPA por CPU
+          # simplesmente não funciona: <unknown>.
+          # Limite de CPU de propósito NÃO existe (throttling mata latência);
+          # limite de memória existe (OOM é melhor que node inteiro morrer).
+          resources:
+            requests:
+              cpu: 100m
+              memory: 64Mi
+            limits:
+              memory: 128Mi
+
+          # DECISÃO 5 — três probes, três perguntas diferentes:
+          # startup:   "já terminou de subir?"  (segura as outras duas)
+          # readiness: "pode receber tráfego AGORA?" (falhou → sai do Service, NÃO reinicia)
+          # liveness:  "travou de vez?" (falhou → kubelet reinicia o container)
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 2
+            failureThreshold: 15 # até 30 s para subir; passou disso, reinicia
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 3 # 15 s sem responder → fora do balanceamento
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3 # 30 s morto → restart. Nunca menos folgado que o readiness.
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]

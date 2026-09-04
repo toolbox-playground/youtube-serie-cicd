@@ -1,0 +1,41 @@
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: tbx-api
+  namespace: tbx
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: tbx-api
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          # 50% do REQUEST (100m) = 50m por pod. Fórmula do controller:
+          # desired = ceil(atual * uso/alvo). 2 pods a 300% → ceil(2*6) → 6 (teto).
+          averageUtilization: 50
+  # DECISÃO 7 — o padrão do Kubernetes é esperar 300 s (5 min) para reduzir.
+  # No vídeo eu uso 60 s para caber na gravação; em produção, deixe os 300
+  # ou mais — reduzir rápido demais é o que causa "flapping".
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 60
+      policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 30
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+        - type: Percent
+          value: 100
+          periodSeconds: 15
+        - type: Pods
+          value: 4
+          periodSeconds: 15
+      selectPolicy: Max

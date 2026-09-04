@@ -1,0 +1,17 @@
+# Cluster local para o vídeo: 1 control-plane + 2 workers — o mesmo desenho do
+# "Kubernetes do zero" (14/ago); só ganhou o mapeamento de porta abaixo.
+# Se o cluster "tbx" daquele vídeo ainda existir: kind delete cluster --name tbx
+# Dois workers existem por um motivo: o Bloco 8 drena um nó e o pod
+# precisa ter para onde ir. Um worker só = "self-healing" que não cura nada.
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: tbx
+nodes:
+  - role: control-plane
+    extraPortMappings:
+      # NodePort 30080 do Service vira localhost:8080 na sua máquina
+      - containerPort: 30080
+        hostPort: 8080
+        protocol: TCP
+  - role: worker
+  - role: worker

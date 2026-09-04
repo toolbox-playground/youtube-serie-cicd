@@ -1,0 +1,41 @@
+# Gerador de carga: N pods em loop de wget contra o Service.
+# Liga:  kubectl -n tbx scale deploy/load --replicas=3
+# Desliga: kubectl -n tbx scale deploy/load --replicas=0
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: load
+  namespace: tbx
+  labels:
+    app: load
+spec:
+  replicas: 0
+  selector:
+    matchLabels:
+      app: load
+  template:
+    metadata:
+      labels:
+        app: load
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: load
+          image: busybox:1.37
+          command: ["/bin/sh", "-c"]
+          args:
+            - 'while true; do wget -q -O- http://tbx-api.tbx.svc.cluster.local/ >/dev/null; done'
+          resources:
+            requests:
+              cpu: 50m
+              memory: 16Mi
+            limits:
+              memory: 32Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]

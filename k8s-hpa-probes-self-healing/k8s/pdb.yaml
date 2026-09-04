@@ -1,0 +1,13 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: tbx-api
+  namespace: tbx
+spec:
+  # DECISÃO 6 — durante manutenção (drain, upgrade de nó), nunca menos de 1
+  # pod Ready. Sem PDB, o drain derruba todos ao mesmo tempo e o Deployment
+  # "cura" — depois de alguns segundos de 503.
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: tbx-api
