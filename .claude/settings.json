@@ -1,0 +1,95 @@
+{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Edit",
+      "Write",
+      "Glob",
+      "Grep",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)",
+      "Bash(git branch:*)",
+      "Bash(git checkout:*)",
+      "Bash(git switch:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push origin:*)",
+      "Bash(git fetch:*)",
+      "Bash(git pull:*)",
+      "Bash(git ls-remote:*)",
+      "Bash(gh pr:*)",
+      "Bash(gh run:*)",
+      "Bash(gh repo view:*)",
+      "Bash(cd docker-gitHub-actions-pipeline-de-prod:*)",
+      "Bash(pytest:*)",
+      "Bash(python -m pytest:*)",
+      "Bash(pip install:*)",
+      "Bash(docker build:*)",
+      "Bash(docker run:*)",
+      "Bash(docker ps:*)",
+      "Bash(docker logs:*)",
+      "Bash(docker stop:*)",
+      "Bash(docker rm:*)",
+      "Bash(docker images:*)",
+      "Bash(curl:*)",
+      "Bash(actionlint:*)",
+      "Bash(hadolint:*)",
+      "Bash(sleep:*)",
+      "Bash(ls:*)",
+      "Bash(cat:*)"
+    ],
+    "deny": [
+      "Bash(gh api:*)",
+      "Bash(gh secret:*)",
+      "Bash(gh environment:*)",
+      "Bash(gh workflow:*)",
+      "Bash(gh auth:*)",
+      "Bash(ssh:*)",
+      "Bash(scp:*)",
+      "Bash(rsync:*)",
+      "Bash(docker compose:*)",
+      "Bash(docker-compose:*)",
+      "Bash(docker push:*)",
+      "Bash(docker login:*)",
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)",
+      "Bash(git reset --hard:*)",
+      "Bash(git rebase:*)",
+      "Bash(sudo:*)",
+      "Read(./**/.env)",
+      "Read(./**/*_key*)",
+      "Read(./**/*.pem)",
+      "Read(./docker-gitHub-actions-pipeline-de-prod/deploy/**)",
+      "Edit(./docker-gitHub-actions-pipeline-de-prod/deploy/**)",
+      "Write(./docker-gitHub-actions-pipeline-de-prod/deploy/**)",
+      "Edit(./.github/workflows/deploy-pages.yml)",
+      "Edit(./.github/workflows/2026-08-05_aws.yaml)",
+      "Edit(./.github/workflows/github-actions-pipeline-completa.yml)",
+      "Edit(./.github/workflows/github-actions-secrets-azure-*)",
+      "Edit(./5-principais-erros-do-cicd/**)",
+      "Edit(./github-actions-pipeline-completa/**)",
+      "Edit(./github-actions-secrets-azure/**)",
+      "Edit(./k8s-hpa-probes-self-healing/**)",
+      "Edit(./kubernetes-do-zero-com-kind/**)",
+      "Edit(./terraform-na-pratica-2026/**)",
+      "Edit(./.claude/**)",
+      "Write(./.claude/**)",
+      "Edit(./CLAUDE.md)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/guarda.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
