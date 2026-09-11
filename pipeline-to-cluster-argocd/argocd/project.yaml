@@ -1,0 +1,34 @@
+# AppProject: o "escopo" do Argo CD para este vídeo.
+# Tudo o que o Argo pode fazer em nome da TBX cabe neste arquivo — e é o que
+# separa "instalei Argo" de "uso Argo". Sem AppProject dedicado, a Application
+# cai no projeto `default`, que pode tudo em qualquer namespace.
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: tbx
+  namespace: argocd
+  # Sem finalizer de propósito: apagar o projeto não deve apagar o que está no cluster.
+spec:
+  description: "TBX Tech — série CI/CD (pipeline → cluster)"
+
+  # 1. De ONDE o Argo pode ler manifestos. Só este repo.
+  #    (a Makefile troca esta URL pela do seu fork: make app REPO_URL=...)
+  sourceRepos:
+    - https://github.com/toolbox-playground/youtube-serie-cicd.git
+
+  # 2. PARA ONDE o Argo pode aplicar. Só o cluster local, só o namespace `tbx`.
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: tbx
+
+  # 3. Recursos de CLUSTER (sem namespace) permitidos. O `namespace.yaml` do
+  #    vídeo passado é um recurso de cluster — sem esta linha o sync falha com
+  #    "resource Namespace is not permitted in project tbx". Erro nº 2 da lista.
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+
+  # 4. Dentro do namespace, o que NÃO pode. Segredo é gerido fora do Git.
+  namespaceResourceBlacklist:
+    - group: ""
+      kind: Secret

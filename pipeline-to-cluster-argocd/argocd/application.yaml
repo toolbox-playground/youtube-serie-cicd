@@ -1,0 +1,57 @@
+# Application: "o estado desejado do app `tbx-api` é o que está NESTA pasta,
+# NESTE branch, DESTE repo". A pipeline nunca fala com o cluster — ela muda a
+# pasta. Quem entrega é o Argo, puxando de dentro do kind.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: tbx-api
+  namespace: argocd
+  # Ao apagar a Application, apaga também os recursos dela no cluster (cascade).
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: tbx
+
+  source:
+    # (a Makefile troca esta URL pela do seu fork: make app REPO_URL=...)
+    repoURL: https://github.com/toolbox-playground/youtube-serie-cicd.git
+    targetRevision: main
+    # A MESMA pasta do vídeo "HPA, probes e self-healing". Nada foi copiado:
+    # os 5 manifestos (namespace, deployment, service, pdb, hpa) são a fonte.
+    # `load/` fica de fora de propósito — gerador de carga não é estado desejado.
+    path: k8s-hpa-probes-self-healing/k8s
+    directory:
+      recurse: false
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: tbx
+
+  syncPolicy:
+    automated:
+      prune: true      # apagou o arquivo no Git → some do cluster
+      selfHeal: true   # alguém fez `kubectl edit` na mão → Argo desfaz
+    syncOptions:
+      # Só toca no que está diferente; não reaplica os 5 arquivos a cada sync.
+      - ApplyOutOfSyncOnly=true
+      # Faz o `ignoreDifferences` abaixo valer também na hora de APLICAR,
+      # não só na hora de comparar. Sem isto o sync reescreve `replicas: 2`.
+      - RespectIgnoreDifferences=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 1m
+
+  # O HPA do vídeo passado muda `spec.replicas` (2 → 6 sob carga). Para o Argo
+  # isso é "drift": o Git diz 2, o cluster diz 6 → OutOfSync → selfHeal volta
+  # para 2 → HPA sobe de novo. Briga infinita. Erro nº 1 da lista, e o mesmo
+  # aviso do Bloco 8 do vídeo passado, agora com o Argo no meio.
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      name: tbx-api
+      namespace: tbx
+      jsonPointers:
+        - /spec/replicas

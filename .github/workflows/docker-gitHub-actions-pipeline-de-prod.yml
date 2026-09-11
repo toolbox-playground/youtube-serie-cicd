@@ -132,4 +132,53 @@ jobs:
         env:
           IMAGE_TAG: ${{ needs.build.outputs.tag }}
 
+  bump-manifest:
+    name: "GitOps · troca a tag no manifesto"
+    needs: [build]                                # só depois que a imagem escaneada está no GHCR
+    if: github.ref == 'refs/heads/main'           # o build já só roda na main; explícito por leitura
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write                             # o ÚNICO privilégio novo desta pipeline
+    concurrency:
+      group: gitops-bump                          # dois merges seguidos não disputam o push
+      cancel-in-progress: false
+    env:
+      MANIFEST: k8s-hpa-probes-self-healing/k8s/deployment.yaml
+      IMAGE: ghcr.io/${{ github.repository }}
+    steps:
+      # Use o MESMO SHA do actions/checkout que já está fixado neste workflow
+      # (vídeo de 28/ago: action por tag = CVE-2026-33634). Não invente SHA.
+      - uses: actions/checkout@COPIE-O-SHA-DO-CHECKOUT-JA-USADO-NESTE-WORKFLOW # v5
+        with:
+          ref: main
+          fetch-depth: 0                          # `pull --rebase` precisa de histórico
 
+      - name: Tag desta imagem
+        run: echo "TAG=sha-${GITHUB_SHA::7}" >> "$GITHUB_ENV"
+
+      - name: Troca a tag (uma linha, e só ela)
+        run: |
+          set -euo pipefail
+          # Exatamente 1 linha `image: ghcr.io/<repo>:sha-…` no manifesto — senão para aqui.
+          n=$(grep -cE "image: ${IMAGE}:sha-[0-9a-fx]+" "${MANIFEST}" || true)
+          if [ "${n}" != "1" ]; then
+            echo "::error::esperava 1 linha 'image: ${IMAGE}:sha-…' em ${MANIFEST}, achei ${n}"; exit 1
+          fi
+          sed -i -E "s#(image: ${IMAGE}):sha-[0-9a-fx]+#\1:${TAG}#" "${MANIFEST}"
+          echo "--- diff ---"; git --no-pager diff
+
+      - name: Commit + push (o "deploy" é este commit)
+        run: |
+          set -euo pipefail
+          if git diff --quiet; then echo "manifesto já aponta para ${TAG}; nada a fazer"; exit 0; fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "deploy(k8s): ${IMAGE}:${TAG}" \
+            -m "Imagem publicada e escaneada pelo run ${{ github.run_id }}." \
+            -m "Commit feito pela pipeline. Quem aplica no cluster é o Argo CD."
+          # Alguém pode ter feito push na main durante o build: rebase e tenta de novo (3x).
+          for i in 1 2 3; do
+            git push origin main && exit 0
+            git pull --rebase origin main
+          done
+          echo "::error::não consegui fazer push após 3 tentativas"; exit 1
