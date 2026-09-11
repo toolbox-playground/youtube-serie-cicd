@@ -48,7 +48,7 @@ spec:
       containers:
         - name: api
           # A MESMA imagem que a pipeline de sexta passada publicou no GHCR.
-          image: ghcr.io/toolbox-playground/youtube-serie-cicd:sha-105a7c3
+          image: ghcr.io/toolbox-playground/youtube-serie-cicd:sha-4872309
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
