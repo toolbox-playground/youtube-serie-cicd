@@ -11,7 +11,9 @@ MANIFEST="https://raw.githubusercontent.com/argoproj/argo-cd/${ARGOCD_VERSION}/m
 
 echo "==> Argo CD ${ARGOCD_VERSION} (poll ${ARGOCD_POLL})"
 kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
-kubectl apply -n argocd -f "${MANIFEST}"
+# server-side apply: o client-side grava o objeto inteiro na annotation last-applied-configuration,
+# e o CRD applicationsets.argoproj.io estoura o limite de 262144 bytes de uma annotation.
+kubectl apply -n argocd --server-side --force-conflicts -f "${MANIFEST}"
 
 echo "==> esperando CRDs"
 kubectl wait --for=condition=Established crd/applications.argoproj.io crd/appprojects.argoproj.io --timeout=120s
