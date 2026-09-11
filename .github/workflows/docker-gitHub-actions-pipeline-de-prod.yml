@@ -71,22 +71,47 @@ jobs:
           images: ${{ env.IMAGE }}
           tags: type=sha
 
-      # 1) BUILD local: carrega a imagem no daemon do runner (load), NÃO publica.
-      #    Escreve o cache no GHA para o push reaproveitar sem rebuildar.
-      - id: build
+      # 1a) BUILD amd64 local (load), NÃO publica. Cache por arquitetura (scope=amd64)
+      #     para o push reaproveitar sem rebuildar.
+      - id: build-amd64
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         with:
           context: docker-gitHub-actions-pipeline-de-prod
+          platforms: linux/amd64
           load: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: APP_VERSION=${{ steps.meta.outputs.version }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=amd64
+          cache-to: type=gha,scope=amd64,mode=max
 
-      # 2) SCAN: gate de segurança na imagem local (ainda não publicada).
-      #    CRITICAL/HIGH com correção disponível = pipeline para aqui, antes do push.
-      - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+      # 1b) SCAN amd64: gate na imagem local (ainda não publicada).
+      #     CRITICAL/HIGH com correção disponível = pipeline para aqui, antes do push.
+      - name: Trivy · amd64
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: ${{ steps.meta.outputs.tags }}
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: "1"
+
+      # 2a) BUILD arm64 local (load), emulado via QEMU. Trivy lê pacotes/camadas —
+      #     não executa a imagem, então escanear arm64 no runner amd64 funciona.
+      - id: build-arm64
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        with:
+          context: docker-gitHub-actions-pipeline-de-prod
+          platforms: linux/arm64
+          load: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: APP_VERSION=${{ steps.meta.outputs.version }}
+          cache-from: type=gha,scope=arm64
+          cache-to: type=gha,scope=arm64,mode=max
+
+      # 2b) SCAN arm64: mesmo gate, agora sobre a variante que também será publicada.
+      - name: Trivy · arm64
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: ${{ steps.meta.outputs.tags }}
           severity: CRITICAL,HIGH
@@ -101,10 +126,10 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       # 3) PUSH multi-arch: publica um manifest list amd64 + arm64 (kind no Apple Silicon
-      #    puxa arm64; VM/CI amd64 puxa amd64). O amd64 reaproveita o cache do build acima;
-      #    o arm64 é construído aqui sob emulação QEMU. O gate do Trivy roda sobre o amd64;
-      #    as duas arquiteturas saem do MESMO Dockerfile/base (python:3.12-slim), então os
-      #    CVEs de pacote de SO são os mesmos.
+      #    puxa arm64; VM/CI amd64 puxa amd64). As duas arquiteturas JÁ passaram pelo Trivy
+      #    acima; aqui só reaproveitamos os dois caches (scope=amd64 e scope=arm64) — nada
+      #    rebuilda, o step só monta e publica o manifest list. Imagem reprovada morre no
+      #    scan, antes de qualquer credencial de registry ser usada.
       - id: push
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         with:
@@ -114,7 +139,9 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: APP_VERSION=${{ steps.meta.outputs.version }}
-          cache-from: type=gha
+          cache-from: |
+            type=gha,scope=amd64
+            type=gha,scope=arm64
 
   # ---------- 3) DEPLOY — só depois do scan, e só com aprovação no environment ----------
 #  deploy:
