@@ -3,11 +3,14 @@
 # Uso: bash scripts/preflight.sh <REPO_URL> <PASTA_DO_VIDEO_PASSADO>
 set -uo pipefail
 
-REPO_URL="${1:-https://github.com/toolbox-playground/youtube-serie-cicd.git}"
-PREV_DIR="${2:-../k8s-hpa-probes-self-healing}"
+trim() { local s="$*"; s="${s#"${s%%[![:space:]]*}"}"; s="${s%"${s##*[![:space:]]}"}"; printf '%s' "$s"; }
+REPO_URL="$(trim "${1:-https://github.com/toolbox-playground/youtube-serie-cicd.git}")"
+PREV_DIR="$(trim "${2:-../k8s-hpa-probes-self-healing}")"
 MANIFEST="${PREV_DIR}/k8s/deployment.yaml"
-REPO_SLUG="$(sed -E 's#https://github.com/##; s#\.git$##' <<<"${REPO_URL}")"
+# aceita com/sem .git, com/sem barra final, com/sem espaços
+REPO_SLUG="$(sed -E 's#^https?://github\.com/##; s#/+$##; s#\.git$##' <<<"${REPO_URL}")"
 IMAGE="ghcr.io/${REPO_SLUG,,}"
+echo "== alvo: repo ${REPO_SLUG} · imagem ${IMAGE}"
 fail=0
 ok()   { printf '  \033[32m✔\033[0m %s\n' "$*"; }
 bad()  { printf '  \033[31m✘\033[0m %s\n' "$*"; fail=1; }
@@ -26,7 +29,7 @@ grep -q '^cluster:' "${PREV_DIR}/Makefile" 2>/dev/null && ok "alvo 'make cluster
 ls "${PREV_DIR}/k8s/"kustomization.y*ml >/dev/null 2>&1 && warn "há kustomization.yaml em k8s/ — a Application usa 'directory'; remova ou troque para source.kustomize" || true
 
 echo "== manifesto: exatamente 1 linha de imagem, com tag sha- real"
-n=$(grep -cE "image: ${IMAGE}:sha-[0-9a-fx]+" "${MANIFEST}" 2>/dev/null || echo 0)
+n=$(grep -cE "image: ${IMAGE}:sha-[0-9a-fx]+" "${MANIFEST}" 2>/dev/null || true); n="${n:-0}"
 [ "$n" = "1" ] && ok "1 linha 'image: ${IMAGE}:sha-…'" || bad "esperava 1 linha 'image: ${IMAGE}:sha-…' em ${MANIFEST}, achei ${n} (nome da imagem bate com o repo?)"
 grep -qE "image: ${IMAGE}:sha-x+" "${MANIFEST}" 2>/dev/null && warn "tag ainda é o placeholder sha-xxxxxxx — o 1º run da pipeline troca; o Argo vai dar ImagePullBackOff até lá (esperado)"
 tag=$(grep -oE "sha-[0-9a-f]{7}" "${MANIFEST}" | head -1)
