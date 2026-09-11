@@ -110,28 +110,29 @@ jobs:
           cache-from: type=gha
 
   # ---------- 3) DEPLOY — só depois do scan, e só com aprovação no environment ----------
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment: production
-    steps:
-      - uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1.2.5
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
-          envs: IMAGE_TAG
-          script: |
-            set -e
-            cd /opt/tbx-api
-            echo "IMAGE_TAG=${IMAGE_TAG}" > .env
-            docker compose pull --quiet
-            docker compose up -d --remove-orphans
-            docker image prune -f >/dev/null
-            docker compose ps
-        env:
-          IMAGE_TAG: ${{ needs.build.outputs.tag }}
+#  deploy:
+#    needs: build
+#    runs-on: ubuntu-latest
+#    environment: production
+#    steps:
+#      - uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1.2.5
+#        with:
+#          host: ${{ secrets.SSH_HOST }}
+#          username: ${{ secrets.SSH_USER }}
+#          key: ${{ secrets.SSH_KEY }}
+#          envs: IMAGE_TAG
+#          script: |
+#            set -e
+#            cd /opt/tbx-api
+#            echo "IMAGE_TAG=${IMAGE_TAG}" > .env
+#            docker compose pull --quiet
+#            docker compose up -d --remove-orphans
+#            docker image prune -f >/dev/null
+#            docker compose ps
+#        env:
+#          IMAGE_TAG: ${{ needs.build.outputs.tag }}
 
+  # ---------- 4) DEPLOY AGORA USANDO GITOPS ----------
   bump-manifest:
     name: "GitOps · troca a tag no manifesto"
     needs: [build]                                # só depois que a imagem escaneada está no GHCR
