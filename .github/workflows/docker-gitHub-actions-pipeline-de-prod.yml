@@ -149,7 +149,7 @@ jobs:
     steps:
       # Use o MESMO SHA do actions/checkout que já está fixado neste workflow
       # (vídeo de 28/ago: action por tag = CVE-2026-33634). Não invente SHA.
-      - uses: actions/checkout@COPIE-O-SHA-DO-CHECKOUT-JA-USADO-NESTE-WORKFLOW # v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: main
           fetch-depth: 0                          # `pull --rebase` precisa de histórico
@@ -178,7 +178,7 @@ jobs:
             -m "Imagem publicada e escaneada pelo run ${{ github.run_id }}." \
             -m "Commit feito pela pipeline. Quem aplica no cluster é o Argo CD."
           # Alguém pode ter feito push na main durante o build: rebase e tenta de novo (3x).
-          for i in 1 2 3; do
+          for _ in 1 2 3; do
             git push origin main && exit 0
             git pull --rebase origin main
           done
