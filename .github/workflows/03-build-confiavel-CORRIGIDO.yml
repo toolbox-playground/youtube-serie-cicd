@@ -1,0 +1,51 @@
+# ============================================================================
+#  03 · BUILD CONFIÁVEL · VERSÃO CORRIGIDA
+# ----------------------------------------------------------------------------
+#  Uma única mudança, mas decisiva: a CHAVE do cache é SEPARADA POR NÍVEL DE
+#  CONFIANÇA. A main grava e restaura chaves com o prefixo `trusted-` — e um
+#  PR (pipeline 04) só consegue mexer em chaves com prefixo `pr-`. Mesmo que
+#  um PR grave um cache, a main nunca o restaura, porque a chave não colide.
+#
+#  Esta separação funciona enquanto workflows não confiáveis não usarem a
+#  chave trusted-. A política de execução impede reintroduzir o vetor.
+# ============================================================================
+name: 03 · build-confiavel · CORRIGIDO
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: 2026-09-25_lab-cache-poisoning
+    steps:
+      - name: Checkout (código confiável da main)
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+
+      - name: Restaurar cache de build (escopo CONFIÁVEL)
+        id: cache
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: 2026-09-25_lab-cache-poisoning/build-cache
+          # Prefixo 'trusted-' isola por nível de confiança. Um PR não escreve aqui.
+          key: trusted-build-cache-${{ hashFiles('2026-09-25_lab-cache-poisoning/requirements.txt') }}
+
+      - name: Build (só se o cache não bateu)
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: bash build.sh
+
+      - name: Usar o artefato de build
+        run: |
+          echo "== conteúdo de build-cache/ (escopo confiável) =="
+          ls -la build-cache
+          if [ -f build-cache/PWNED-POR-PR.txt ]; then
+            echo "::error title=CACHE ENVENENADO::Nao deveria acontecer na versao corrigida"
+            exit 1
+          fi
+          echo "cache confiável íntegro — nada plantado por PR."

@@ -1,0 +1,53 @@
+# ============================================================================
+#  01 · BUILD CONFIÁVEL · VERSÃO VULNERÁVEL
+# ----------------------------------------------------------------------------
+#  Roda a cada push na main. RESTAURA um cache de build e CONFIA no conteúdo,
+#  sem verificar quem o escreveu. É a "execução confiável" que será
+#  contaminada pela pipeline 02 (pull_request_target).
+#
+#  A chave do cache depende só de requirements.txt — um arquivo que o atacante
+#  NÃO precisa mudar. Por isso a chave que a main restaura é a MESMA que um PR
+#  conseguiu gravar.
+# ============================================================================
+name: 01 · build-confiavel · VULNERAVEL
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: 2026-09-25_lab-cache-poisoning
+    steps:
+      - name: Checkout (código confiável da main)
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+
+      - name: Restaurar cache de build
+        id: cache
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: 2026-09-25_lab-cache-poisoning/build-cache
+          # >>> MESMA CHAVE usada no PR (pipeline 02). É a fronteira que vaza. <<<
+          key: build-cache-${{ hashFiles('2026-09-25_lab-cache-poisoning/requirements.txt') }}
+
+      - name: Build (só se o cache não bateu)
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: bash build.sh
+
+      - name: Usar o artefato de build — a main CONFIA neste diretório
+        run: |
+          echo "== conteúdo de build-cache/ que a main vai usar =="
+          ls -la build-cache
+          if [ -f build-cache/PWNED-POR-PR.txt ]; then
+            echo "::error title=CACHE ENVENENADO::Um arquivo plantado por um PR entrou no build confiável da main"
+            echo "----- conteúdo do arquivo plantado -----"
+            cat build-cache/PWNED-POR-PR.txt
+            exit 1
+          fi
+          echo "cache limpo — nada plantado."

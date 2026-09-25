@@ -1,0 +1,59 @@
+# ============================================================================
+#  02 · CI DE PULL REQUEST · VERSÃO VULNERÁVEL  (o vetor real)
+# ----------------------------------------------------------------------------
+#  Três erros que, juntos, deixam um PR gravar no cache da main:
+#
+#  ERRO 1  — gatilho `pull_request_target`: roda no CONTEXTO DA BASE (main).
+#            Logo, o cache que ele grava fica no ESCOPO DA MAIN (não no merge
+#            ref isolado do PR). É o que quebra a fronteira de confiança.
+#  ERRO 2  — faz checkout do CÓDIGO DO PR (head.sha) e o EXECUTA neste
+#            contexto confiável. Isso é uma "Pwn Request": código de terceiro
+#            rodando com os privilégios da base.
+#  ERRO 3  — usa a MESMA CHAVE de cache da main (depende só de requirements.txt,
+#            que o atacante não muda). O que este job grava, a main restaura.
+#
+#  Nenhum segredo é usado aqui de propósito — o laboratório prova a
+#  contaminação com um arquivo marcador inerte, não com exfiltração.
+# ============================================================================
+name: 02 · pr-target · VULNERAVEL
+
+on:
+  pull_request_target: # ERRO 1
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+# Intencionalmente inseguro para a demonstração: o padrão atual é somente leitura.
+cache-mode: write
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: 2026-09-25_lab-cache-poisoning
+    steps:
+      - name: Checkout do CÓDIGO DO PR (ERRO 2 — Pwn Request)
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          allow-unsafe-pr-checkout: true # opt-in explícito para a demonstração
+          persist-credentials: false
+
+      - name: Setup Python
+        uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Instalar dependências
+        run: pip install -r requirements.txt
+
+      - name: Cache de build (ERRO 3 — chave compartilhada com a main)
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: 2026-09-25_lab-cache-poisoning/build-cache
+          key: build-cache-${{ hashFiles('2026-09-25_lab-cache-poisoning/requirements.txt') }}
+
+      - name: Rodar o build.sh do PR — grava build-cache/ no escopo da main
+        run: bash build.sh

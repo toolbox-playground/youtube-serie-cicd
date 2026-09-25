@@ -1,0 +1,60 @@
+# ============================================================================
+#  04 · CI DE PULL REQUEST · VERSÃO CORRIGIDA  (defesa em profundidade)
+# ----------------------------------------------------------------------------
+#  Quatro camadas, do mais forte para o mais fraco:
+#
+#  CAMADA 1 (política, no repo/org — NÃO neste arquivo): "Workflow execution
+#           protections" desabilita pull_request_target. É a única barreira
+#           que o autor do PR não consegue editar. Ver docs/execution-protections.md
+#
+#  CAMADA 2 — gatilho `pull_request` (não `_target`): roda no contexto do FORK,
+#           sem os secrets da base, e o cache fica no MERGE REF isolado — a
+#           própria fronteira de escopo do GitHub já separa da main.
+#
+#  CAMADA 3 — `cache-mode: read`: o job restaura, mas não grava cache.
+#           ATENÇÃO: este arquivo YAML é editável pelo autor do PR. `cache-mode`
+#           é um CINTO, não a parede. A parede é a CAMADA 1.
+#
+#  CAMADA 4 — chave com prefixo `pr-`: nunca colide com a chave `trusted-` da
+#           main (pipeline 03). Redundância proposital.
+# ============================================================================
+name: 04 · pr · CORRIGIDO
+
+on:
+  pull_request: # CAMADA 2
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+cache-mode: read # CAMADA 3 (cinto — YAML é editável; ver README)
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: 2026-09-25_lab-cache-poisoning
+    steps:
+      - name: Checkout do PR (seguro — contexto do fork, sem secrets da base)
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+
+      - name: Setup Python
+        uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Instalar dependências
+        run: pip install -r requirements.txt
+
+      - name: Testes
+        run: pytest -q
+
+      - name: Cache de build (escopo de PR — CAMADA 4)
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: 2026-09-25_lab-cache-poisoning/build-cache
+          key: pr-build-cache-${{ hashFiles('2026-09-25_lab-cache-poisoning/requirements.txt') }}
+
+      - name: Build do PR
+        run: bash build.sh
